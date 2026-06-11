@@ -23,19 +23,31 @@ def make_strut(start, end, cell_size, thickness) -> np.ndarray:
     A = add_thickness(A, thickness)
     return A
 
+def ball_kernel(radius):
+    """
+    :param radius: [float] - voxels within this distance of the center are activated
+    :return: [ndarray] - a cubic ball-shaped kernel, 1 inside the radius and 0 outside
+    """
+    size = 2 * int(np.ceil(radius)) + 1
+    c = size // 2
+    zz, yy, xx = np.ogrid[:size, :size, :size]
+    dist = np.sqrt((zz - c)**2 + (yy - c)**2 + (xx - c)**2)
+    return (dist <= radius).astype(float)
+
 def add_thickness(array_original, thickness) -> np.ndarray:
     """
-    :param array_original: [ndarray] - an array with thickness 1 of any shape type
-    :param thickness: [int] - the number of pixels to be activated surrounding the base shape
-    :return: [ndarray] - the output is a unit cell that has been convolved to expand the number of pixels activated based on the desired thickness. The activated voxels are 1 and the deactivated voxels are 0
+    :param array_original: [ndarray] - a strut array with thickness 1, of any shape
+    :param thickness: [int] - 0 removes the strut, 1 keeps the thinnest 1-voxel strut,
+    higher values thicken it with a solid ball kernel
+    :return: [ndarray] - the thickened strut. Activated voxels are 1, deactivated are 0
     """
     A = array_original
-    if thickness == 0: 
+    if thickness <= 0:
         A[A > 0] = 0
     else:
-        filter_size = 2*thickness - 1
-        filter = np.ones((filter_size, filter_size, filter_size))
-        convolution = signal.convolve(A, filter, mode='same', method='direct')
+        radius = thickness - 0.5
+        kernel = ball_kernel(radius)
+        convolution = signal.convolve(A, kernel, mode='same', method='direct')
         A = np.where(convolution >= 1, 1, 0)
     return A
 
@@ -47,4 +59,20 @@ def combine_struts(arrays):
     output_array = np.sum(arrays, axis=0) 
     output_array = np.array(output_array > 0, dtype=int) 
     return output_array
+
+def make_frame(cell_size, thickness):
+    node_pairs = [
+        ((0,0,0),(0,0,2)), ((0,0,0),(0,2,0)), ((0,0,0),(2,0,0)),
+        ((0,0,2),(0,2,2)), ((0,0,2),(2,0,2)), ((0,2,0),(0,2,2)),
+        ((0,2,0),(2,2,0)), ((0,2,2),(2,2,2)), ((2,0,0),(2,0,2)),
+        ((2,0,0),(2,2,0)), ((2,0,2),(2,2,2)), ((2,2,0),(2,2,2)),
+
+        ((0,0,0),(0,2,2)), ((0,0,0),(2,0,2)), ((0,0,0),(2,2,0)),
+        ((0,0,2),(0,2,0)), ((0,0,2),(2,0,0)), ((0,0,2),(2,2,2)),
+        ((0,2,0),(2,0,0)), ((0,2,0),(2,2,2)), ((0,2,2),(2,0,2)),
+        ((0,2,2),(2,2,0)), ((2,0,0),(2,2,2)), ((2,0,2),(2,2,0))
+    ]
+
+    struts = [make_strut(a, b, cell_size, thickness) for (a, b) in node_pairs]
+    return combine_struts(struts)
 
