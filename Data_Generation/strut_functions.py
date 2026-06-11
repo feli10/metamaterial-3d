@@ -1,7 +1,7 @@
 import numpy as np
 from scipy import signal
 
-def make_strut(start, end, cell_size, thickness) -> np.ndarray:
+def make_strut(start, end, cell_size, thickness):
     """
     :param start: [tuple] - the (x, y, z) coordinates of the strut's starting point, each in {0, 1, 2}
     :param end: [tuple] - the (x, y, z) coordinates of the strut's ending point, each in {0, 1, 2}
@@ -34,7 +34,7 @@ def ball_kernel(radius):
     dist = np.sqrt((zz - c)**2 + (yy - c)**2 + (xx - c)**2)
     return (dist <= radius).astype(float)
 
-def add_thickness(array_original, thickness) -> np.ndarray:
+def add_thickness(array_original, thickness):
     """
     :param array_original: [ndarray] - a strut array with thickness 1, of any shape
     :param thickness: [int] - 0 removes the strut, 1 keeps the thinnest 1-voxel strut,
@@ -65,12 +65,7 @@ def make_frame(cell_size, thickness):
         ((0,0,0),(0,0,2)), ((0,0,0),(0,2,0)), ((0,0,0),(2,0,0)),
         ((0,0,2),(0,2,2)), ((0,0,2),(2,0,2)), ((0,2,0),(0,2,2)),
         ((0,2,0),(2,2,0)), ((0,2,2),(2,2,2)), ((2,0,0),(2,0,2)),
-        ((2,0,0),(2,2,0)), ((2,0,2),(2,2,2)), ((2,2,0),(2,2,2)),
-
-        ((0,0,0),(0,2,2)), ((0,0,0),(2,0,2)), ((0,0,0),(2,2,0)),
-        ((0,0,2),(0,2,0)), ((0,0,2),(2,0,0)), ((0,0,2),(2,2,2)),
-        ((0,2,0),(2,0,0)), ((0,2,0),(2,2,2)), ((0,2,2),(2,0,2)),
-        ((0,2,2),(2,2,0)), ((2,0,0),(2,2,2)), ((2,0,2),(2,2,0))
+        ((2,0,0),(2,2,0)), ((2,0,2),(2,2,2)), ((2,2,0),(2,2,2))
     ]
 
     struts = [make_strut(a, b, cell_size, thickness) for (a, b) in node_pairs]

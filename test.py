@@ -3,13 +3,20 @@ from Data_Generation.strut_functions import make_strut, combine_struts, make_fra
 from Data_Generation.view_cell import view_cell 
 from Property_Testing.homopy_fem_3d import homogenize_3d, IsotropicMaterial
 
-for cell_size in [10, 15, 20]:
-    frame = make_frame(cell_size, 1.5)
-    view_cell(frame, title=f"size: {cell_size}, thickness: 1.5")
+# cell_size = 10
+# cell = make_strut((0,0,0), (2,2,2), cell_size, 2)
+# frame = make_frame(cell_size, 1)
+# test = combine_struts([frame, cell])
+# view_cell(test, title=f"size: {cell_size}")
 
-# mat  = IsotropicMaterial(E=1.0, nu=0.3)
-# cell = combine_struts([make_strut((1,1,0),(1,1,2), 10, 2)]) # thick vertical bar
-# C = homogenize_3d(10, 10, 10, mat, density_field=cell)
+mat  = IsotropicMaterial(E=1.0, nu=0.3)
 
-# print(C.shape)
-# print(np.round(C, 4))
+d = np.load("cells.npz")
+cells  = d["cells"]
+labels = d["labels"]
+
+print(cells.shape)
+print(labels.shape)
+
+for i in range(1290,1297):
+    view_cell(cells[i], title=f"cell {i} | thickness {labels[i]}")
