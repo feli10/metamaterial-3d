@@ -30,14 +30,11 @@ def add_thickness(array_original, thickness) -> np.ndarray:
     :return: [ndarray] - the output is a unit cell that has been convolved to expand the number of pixels activated based on the desired thickness. The activated voxels are 1 and the deactivated voxels are 0
     """
     A = array_original
-    if thickness == 0:  # want an array of all 0's for thickness = 0
+    if thickness == 0: 
         A[A > 0] = 0
     else:
         filter_size = 2*thickness - 1
-        filter = np.zeros((filter_size, filter_size, filter_size))
-        filter[:, (filter_size - 1) // 2, (filter_size - 1) // 2] = 1
-        filter[(filter_size - 1) // 2, :, (filter_size - 1) // 2] = 1
-        filter[(filter_size - 1) // 2, (filter_size - 1) // 2, :] = 1
+        filter = np.ones((filter_size, filter_size, filter_size))
         convolution = signal.convolve(A, filter, mode='same', method='direct')
         A = np.where(convolution >= 1, 1, 0)
     return A

@@ -4,8 +4,8 @@ from Data_Generation.view_cell import view_cell
 from Property_Testing.homopy_fem_3d import homogenize_3d, IsotropicMaterial
 
 cell = combine_struts([
-make_strut((1,1,0),(1,1,2),10,2), # vertical bar
-make_strut((0,0,0),(2,2,2),10,1), # space diagonal
+make_strut((1,1,0),(1,1,2),10,3), # vertical bar
+make_strut((0,0,0),(2,2,2),10,2), # space diagonal
 ])
 print(cell.shape)
 view_cell(cell, title="bar + space diagonal")
