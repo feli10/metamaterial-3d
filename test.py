@@ -14,9 +14,10 @@ mat  = IsotropicMaterial(E=1.0, nu=0.3)
 d = np.load("cells.npz")
 cells  = d["cells"]
 labels = d["labels"]
+vfs = d["vfs"]
 
 print(cells.shape)
 print(labels.shape)
 
-for i in range(1290,1297):
-    view_cell(cells[i], title=f"cell {i} | thickness {labels[i]}")
+for i in range(600,610):
+    view_cell(cells[i], title=f"cell {i} | vfs {vfs[i]}")
