@@ -11,13 +11,17 @@ from Property_Testing.homopy_fem_3d import homogenize_3d, IsotropicMaterial
 
 mat  = IsotropicMaterial(E=1.0, nu=0.3)
 
-d = np.load("cells.npz")
+d = np.load("dataset.npz")
 cells  = d["cells"]
 labels = d["labels"]
 vfs = d["vfs"]
+C = d["C"]
 
 print(cells.shape)
 print(labels.shape)
+print(vfs.shape)
+print(C.shape)
 
 for i in range(600,610):
     view_cell(cells[i], title=f"cell {i} | vfs {vfs[i]}")
+    print(C[i])
