@@ -11,26 +11,37 @@ from sklearn.model_selection import train_test_split
 from models_epi_3d import Model
 from utils_epi_3d import CombinedDataset, train_model, test_model,Logger
 
+import os
 
 if __name__ == '__main__':
     cuda = False
     device = torch.device("cuda" if cuda else "cpu")
+
+    repo = osp.dirname(osp.dirname(__file__))
+    dataset_path = os.environ.get("DATASET_PATH", osp.join(repo, "dataset.npz"))
+    d = np.load(dataset_path)
+
+    model_type = 'Freq_FNO' #'Spherical_FNO'
+    experiment_name = model_type
+
+    out_dir = os.environ.get("OUTPUT_DIR", repo)
+    results_dir = osp.join(out_dir, "results")
+    os.makedirs(results_dir, exist_ok=True)
+    os.makedirs(osp.join(out_dir, "checkpoints"), exist_ok=True)
+    model_file = osp.join(out_dir, "checkpoints", experiment_name + ".pth")
+
     im_x = 10
     im_y = 10
     im_z = 10 
-    model_type = 'Freq_FNO' #'Spherical_FNO'
-    dataset_path = "dataset.npz" # the path to the 3D dataset
-    d = np.load(dataset_path)
-    batch_size = 16
     x_dim  = im_x*im_y*im_z
     hidden_dim = 64
     latent_dim = 32
     num_properties = 22  # 1 + 21, volume fraction + 21 independent properties (6+5+4+3+2+1) becuase elasticity tensor is a symmetric matrix
-    lr = 1e-4
+    
+    batch_size = 16
     epochs = 200
-    results_dir = './results'
-    experiment_name = model_type
-    model_file = osp.join("checkpoints", experiment_name + ".pth")
+    lr = 1e-4
+    
     ## setup logger
     train_logger = Logger(
         osp.join(results_dir, experiment_name+'_train.log'),
