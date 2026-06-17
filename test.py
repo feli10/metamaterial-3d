@@ -25,3 +25,5 @@ print(C.shape)
 for i in range(600,610):
     view_cell(cells[i], title=f"cell {i} | vfs {vfs[i]}")
     print(C[i])
+
+print("hi", end="")

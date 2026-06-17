@@ -19,7 +19,8 @@ if __name__ == '__main__':
     im_y = 10
     im_z = 10 
     model_type = 'Freq_FNO' #'Spherical_FNO'
-    dataset_path = # the path to the 3D dataset
+    dataset_path = "dataset.npz" # the path to the 3D dataset
+    d = np.load(dataset_path)
     batch_size = 16
     x_dim  = im_x*im_y*im_z
     hidden_dim = 64
@@ -42,9 +43,12 @@ if __name__ == '__main__':
 
     kwargs = {'num_workers': 1, 'pin_memory': False} 
 
-    
-    X = # X is the 3D shape data, in the shape of [n,im_x, im_y, im_z], n is the total data number
-    y = # y is the material property data, in the shape of [n, 22]
+    # X is the 3D shape data, in the shape of [n,im_x, im_y, im_z]
+    X = d["cells"].astype(np.float32) 
+    iu = np.triu_indices(6)
+    C_flat = d["C"][:, iu[0], iu[1]]
+    # y is the material property data, in the shape of [n, 22]
+    y = np.concatenate([d["vfs"][:, None], C_flat], axis=1).astype(np.float32) 
     print("X shape:{}, y shape: {}".format(X.shape, y.shape))
     
     # Compute min/max per property
