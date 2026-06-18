@@ -4,7 +4,7 @@ import numpy as np
 
 # run_homog.py lives in the repo root; the FEM engine is in Property_Testing/.
 # Add that folder to the import path so we can import the homogenizer.
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "Property_Testing"))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__)), "Property_Testing"))
 from homopy_fem_3d import homogenize_3d, IsotropicMaterial
 
 # --- figure out which slice of cells THIS array task is responsible for ---
@@ -15,7 +15,7 @@ task_id = int(os.environ["SLURM_ARRAY_TASK_ID"])
 n_tasks = int(sys.argv[1])
 
 # --- load all the cells (the whole file; cheap, it's small) ---
-repo = os.path.dirname(__file__)
+repo = os.path.dirname(os.path.dirname(__file__))
 cells = np.load(os.path.join(repo, "cells.npz"))["cells"]
 
 # Split the indices [0, 1, ..., 1295] into n_tasks balanced chunks,

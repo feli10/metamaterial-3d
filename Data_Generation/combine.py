@@ -2,7 +2,7 @@ import os
 import glob
 import numpy as np
 
-repo = os.path.dirname(__file__)
+repo = os.path.dirname(os.path.dirname(__file__))
 d = np.load(os.path.join(repo, "cells.npz"))
 cells, labels, vfs = d["cells"], d["labels"], d["vfs"]
 
