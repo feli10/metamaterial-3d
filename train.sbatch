@@ -11,4 +11,4 @@ export DATASET_PATH=/scratch/xz5367/metamaterials/dataset.npz
 export OUTPUT_DIR=/scratch/xz5367/metamaterials
 export LD_LIBRARY_PATH=/scratch/xz5367/metamaterials/penv/lib:$LD_LIBRARY_PATH
 
-/scratch/xz5367/metamaterials/penv/bin/python "$HOME/metamaterial-3d/ML_Model/train_epi_3d.py"
+/scratch/xz5367/metamaterials/penv/bin/python "$HOME/metamaterial-3d/ML_Model/train_epi_3d.py" "$@"
