@@ -127,7 +127,7 @@ if __name__ == '__main__':
         patience=2,        # wait 2 epochs without improvement
         )
 
-    print("Start training VAE...")
+    print("Start training EAAE...")
     print(f" Training for {epochs} epochs with batch size {batch_size}…")
     for epoch in range(epochs):
         overall_loss, rep_loss, pred_loss, sph_err_e, sph_err_d, m_loss = train_model(train_loader,model,device,optimizer,x_dim,model_type,num_properties)
