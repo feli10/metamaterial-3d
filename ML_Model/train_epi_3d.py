@@ -79,13 +79,13 @@ if __name__ == '__main__':
     train_dataset, test_dataset = train_test_split(dataset, test_size=0.1, random_state=42) ## randomly split the datasedt into training and test datasets
     
     # ── ADD THESE LINES FOR A SMALL DEBUG SUBSET 
-    debug_n = 200
-    train_dataset = Subset(train_dataset, list(range(debug_n)))
-    print(f"  Debug mode: training on only {debug_n} samples "  f"→ {len(train_dataset)/batch_size:.0f} batches/epoch")
+    # debug_n = 200
+    # train_dataset = Subset(train_dataset, list(range(debug_n)))
+    # print(f"  Debug mode: training on only {debug_n} samples "  f"→ {len(train_dataset)/batch_size:.0f} batches/epoch")
 
-    debug_n = 100
-    test_dataset = Subset(test_dataset, list(range(debug_n)))
-    print(f"  Debug mode: testing on only {debug_n} samples "  f"→ {len(test_dataset)/batch_size:.0f} batches/epoch")
+    # debug_n = 100
+    # test_dataset = Subset(test_dataset, list(range(debug_n)))
+    # print(f"  Debug mode: testing on only {debug_n} samples "  f"→ {len(test_dataset)/batch_size:.0f} batches/epoch")
 
 
     train_loader = DataLoader(
