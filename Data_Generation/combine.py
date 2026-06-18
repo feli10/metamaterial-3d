@@ -12,7 +12,7 @@ C = np.zeros((len(cells), 6, 6), dtype=np.float32)
 results = "/scratch/xz5367/metamaterials/results"
 for f in glob.glob(os.path.join(results, "part_*.npz")):
     p = np.load(f)
-    C[p["idx"]] = p["C"]          # place each task's results in their global rows
+    C[p["idx"]] = p["C"] # place each task's results in their global rows
 
 out = "/scratch/xz5367/metamaterials/dataset.npz"
 np.savez_compressed(out, cells=cells, labels=labels, vfs=vfs, C=C)

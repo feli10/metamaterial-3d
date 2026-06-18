@@ -2,8 +2,6 @@ import os
 import sys
 import numpy as np
 
-# run_homog.py lives in the repo root; the FEM engine is in Property_Testing/.
-# Add that folder to the import path so we can import the homogenizer.
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__)), "Property_Testing"))
 from homopy_fem_3d import homogenize_3d, IsotropicMaterial
 
