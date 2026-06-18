@@ -46,7 +46,7 @@ class FNO_Encoder(nn.Module):
         self.conv2 = SpectralConv3d(self.hidden_dim, self.latent_dim, self.modes1, self.modes2, self.modes3)
         self.conv3 = SpectralConv3d(self.latent_dim, self.latent_dim, self.modes1, self.modes2, self.modes3)
         self.conv4 = SpectralConv3d(self.latent_dim, self.latent_dim, self.modes1, self.modes2, self.modes3)
-        self.conv5 = SpectralConv3d(self.latent_dim, self.latent_dim, self.modes1, self.modes2)
+        self.conv5 = SpectralConv3d(self.latent_dim, self.latent_dim, self.modes1, self.modes2, self.modes3)
         self.mlp0 = MLP(self.hidden_dim, self.hidden_dim, self.hidden_dim)
         self.mlp1 = MLP(self.hidden_dim, self.hidden_dim, self.hidden_dim)
         self.mlp2 = MLP(self.latent_dim, self.latent_dim, self.latent_dim)
