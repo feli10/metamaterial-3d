@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import torch
-import torch.nn as nn
 import numpy as np
 from torch.utils.data import DataLoader
 from torch.optim import Adam
@@ -12,6 +11,7 @@ from models_epi_3d import Model
 from utils_epi_3d import CombinedDataset, train_model, test_model,Logger
 
 import os
+import argparse
 
 if __name__ == '__main__':
     cuda = False
@@ -38,9 +38,14 @@ if __name__ == '__main__':
     latent_dim = 32
     num_properties = 22  # 1 + 21, volume fraction + 21 independent properties (6+5+4+3+2+1) becuase elasticity tensor is a symmetric matrix
     
-    batch_size = 16
-    epochs = 200
-    lr = 1e-4
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--epochs", type=int, default=200)
+    parser.add_argument("--batch-size", type=int, default=16)
+    parser.add_argument("--lr", type=float, default=1e-4)
+    args = parser.parse_args()
+    epochs = args.epochs
+    batch_size = args.batch_size
+    lr = args.lr
     
     ## setup logger
     train_logger = Logger(
@@ -60,7 +65,7 @@ if __name__ == '__main__':
     C_flat = d["C"][:, iu[0], iu[1]]
     # y is the material property data, in the shape of [n, 22]
     y = np.concatenate([d["vfs"][:, None], C_flat], axis=1).astype(np.float32) 
-    print("X shape:{}, y shape: {}".format(X.shape, y.shape))
+    print(f"X shape: {X.shape}, y shape: {y.shape}")
     
     # Compute min/max per property
     prop_min = np.min(y, axis=0)
@@ -72,7 +77,7 @@ if __name__ == '__main__':
     
     dataset = CombinedDataset(X,y)
 
-    print("dataset shape:{}".format(len(dataset)))
+    print(f"dataset shape: {len(dataset)}")
     
     from torch.utils.data import Subset
     
@@ -106,7 +111,7 @@ if __name__ == '__main__':
     print("ShapeSpace min:", X.min(), "max:", X.max())
     print("PropertySpace min:", y.min(), "max:", y.max())
     
-    print("train_loader shape: {}".format(len(train_loader)))
+    print(f"train_loader shape: {len(train_loader)}")
 
     use_old_model = True
     if osp.exists(model_file) and use_old_model:
@@ -128,7 +133,7 @@ if __name__ == '__main__':
         )
 
     print("Start training EAAE...")
-    print(f" Training for {epochs} epochs with batch size {batch_size}…")
+    print(f" Training for {epochs} epochs with batch size {batch_size}, lr {lr:.0e}")
     for epoch in range(epochs):
         overall_loss, rep_loss, pred_loss, sph_err_e, sph_err_d, m_loss = train_model(train_loader,model,device,optimizer,x_dim,model_type,num_properties)
         print("\tEpoch", epoch + 1, "complete!", "\tAverage Train Loss: ", overall_loss)

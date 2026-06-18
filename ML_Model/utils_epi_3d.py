@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
-from torch.utils.data import Dataset, DataLoader
-import matplotlib.pyplot as plt
+from torch.utils.data import Dataset
 import csv
 from tqdm import tqdm
 

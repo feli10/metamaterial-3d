@@ -17,8 +17,7 @@ Reference: Extraweich/homopy (https://github.com/Extraweich/homopy)
 """
 
 import numpy as np
-from typing import Tuple, Optional, Union
-from dataclasses import dataclass
+from typing import Tuple, Optional
 from abc import ABC, abstractmethod
 
 
