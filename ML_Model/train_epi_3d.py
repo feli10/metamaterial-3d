@@ -118,7 +118,7 @@ if __name__ == '__main__':
     use_old_model = True
     if osp.exists(model_file) and use_old_model:
         print("Loading model from", model_file)
-        model = torch.load(model_file,map_location=device)
+        model = torch.load(model_file, map_location=device, weights_only=False)
         model.device = device
     else:
         model = Model(batch_size,num_properties,x_dim, hidden_dim, latent_dim,device,model_type,im_x,im_y,im_z, modes1=5, modes2=5,modes3=5).to(device)
