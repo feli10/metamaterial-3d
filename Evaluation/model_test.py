@@ -21,12 +21,12 @@ def draw_cell(ax, A, threshold=0.0, title=None):
 
 device = torch.device("cpu")
 
-model = torch.load(osp.join(repo, "Archive", "e1200", "Freq_FNO.pth"), map_location=device)
+model = torch.load(osp.join(repo, "Archive", "e1200-1800", "Freq_FNO.pth"), map_location=device)
 model.eval()
 
 d = np.load(osp.join(repo, "dataset.npz"))
 
-for i in range(1000, 1010):
+for i in range(30, 40):
     x = torch.tensor(d["cells"][i:i+1]).float()        # [1,10,10,10]
     x_np = x.numpy()
 
