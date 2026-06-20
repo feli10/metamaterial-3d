@@ -46,14 +46,16 @@ if __name__ == '__main__':
     epochs = args.epochs
     batch_size = args.batch_size
     lr = args.lr
+
+    jobid = os.environ.get("SLURM_JOB_ID", "local")
     
     ## setup logger
     train_logger = Logger(
-        osp.join(results_dir, experiment_name+'_train.log'),
+        osp.join(results_dir, f"{experiment_name}_{jobid}_train.log"),
         ['ep', 'train_loss','train_rep','train_pred','train_sph_err_e','train_sph_err_d','train_mean']
     )
     test_logger = Logger(
-        osp.join(results_dir, experiment_name+'_test.log'),
+        osp.join(results_dir, f"{experiment_name}_{jobid}_test.log"),
         ['ep', 'test_loss','test_rep', 'test_pred','test_sph_err_e','test_sph_err_d','test_mean']
     )
 
