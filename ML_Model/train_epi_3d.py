@@ -13,6 +13,8 @@ from utils_epi_3d import CombinedDataset, train_model, test_model,Logger
 import os
 import argparse
 
+print("torch threads:", torch.get_num_threads(), "| OMP:", os.environ.get("OMP_NUM_THREADS"))
+
 if __name__ == '__main__':
     cuda = False
     device = torch.device("cuda" if cuda else "cpu")
