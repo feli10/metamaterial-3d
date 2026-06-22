@@ -15,7 +15,7 @@ COMPONENTS = {
 
 repo = osp.dirname(osp.dirname(__file__))
 ARCHIVE = osp.join(repo, "Archive")
-runs = ["e1400"]
+runs = ["e1200_guard"]
 
 plt.figure(figsize=(8, 5))
 for name in runs:
@@ -23,7 +23,7 @@ for name in runs:
                           delimiter="\t", comments="ep")
     test  = np.genfromtxt(osp.join(ARCHIVE, name, "Freq_FNO_test.log"),
                           delimiter="\t", comments="ep")
-    train[:, 1] = medfilt(train[:, 1], 5)   # smooth out numerical spikes
+    train[:, 1] = medfilt(train[:, 1], 3)   # smooth out numerical spikes
     test[:, 1]  = medfilt(test[:, 1], 3)
 
     # for col in [2, 3, 4, 5, 6]:

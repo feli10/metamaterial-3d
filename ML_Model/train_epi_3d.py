@@ -139,7 +139,7 @@ if __name__ == '__main__':
     print(f" Training for {epochs} epochs with batch size {batch_size}, lr {lr:.0e}")
     for epoch in range(epochs):
         overall_loss, rep_loss, pred_loss, sph_err_e, sph_err_d, m_loss = train_model(train_loader,model,device,optimizer,x_dim,model_type,num_properties)
-        #scheduler.step(overall_loss)
+        scheduler.step(overall_loss) # turn on scheduler
         current_lr = optimizer.param_groups[0]['lr']
         print(f"\tEpoch {epoch + 1} complete!\tTrain Loss: {overall_loss}\tLR: {current_lr:.2e}")
         train_logger.log({
