@@ -127,18 +127,21 @@ if __name__ == '__main__':
     print("Model created with type:", model_type)
     optimizer = Adam(model.parameters(), lr=lr)
     # New Scheduler to reduce loss 
-    scheduler = ReduceLROnPlateau(
-        optimizer,
-        mode='min',        # we want to minimize the loss
-        factor=0.5,        # multiply LR by 0.5 whenever we trigger
-        patience=2,        # wait 2 epochs without improvement
-        )
+    # scheduler = ReduceLROnPlateau(
+    #     optimizer,
+    #     mode='min',        # we want to minimize the loss
+    #     factor=0.5,        # multiply LR by 0.5 whenever we trigger
+    #     patience=2,        # wait 2 epochs without improvement
+    #     )
+    scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=10) # new scheduler for 3D model
 
     print("Start training EAAE...")
     print(f" Training for {epochs} epochs with batch size {batch_size}, lr {lr:.0e}")
     for epoch in range(epochs):
         overall_loss, rep_loss, pred_loss, sph_err_e, sph_err_d, m_loss = train_model(train_loader,model,device,optimizer,x_dim,model_type,num_properties)
-        print("\tEpoch", epoch + 1, "complete!", "\tAverage Train Loss: ", overall_loss)
+        #scheduler.step(overall_loss)
+        current_lr = optimizer.param_groups[0]['lr']
+        print(f"\tEpoch {epoch + 1} complete!\tTrain Loss: {overall_loss}\tLR: {current_lr:.2e}")
         train_logger.log({
         'ep': epoch,             
         'train_loss': overall_loss,

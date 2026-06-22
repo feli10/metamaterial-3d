@@ -223,11 +223,14 @@ class FreqFNO_Decoder(nn.Module):
         small_value_mask = torch.abs(mid_value) < 1e-4
         # mid_value = mid_value.masked_fill(small_value_mask, 1e-3)
         # mid_value = torch.abs(mid_value)*original_sign
+        # small mid_value guard
+        mid_value = mid_value.sign() * mid_value.abs().clamp(min=1e-3) 
         x = x/mid_value
         ## assume the sphere center is (0,0,0)
         z_grid = x - z0
         radius_sq = x_grid**2 + y_grid**2 + z_grid**2
         radical_error = torch.mean((radius_sq - r0_sq)**2,dim=[2,3],keepdim=True)
+        radical_error = radical_error.masked_fill(small_value_mask, 0.0)
         # ## curvature error on spherical surface
         K = _principal_curvatures_heightfield(z_grid, dx, dy)
         curvature_err = torch.mean((K[:,:,5:-5,5:-5] - K0)**2,dim=[2,3],keepdim=True)

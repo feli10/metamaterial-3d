@@ -3,3 +3,4 @@ cells.npz
 dataset.npz
 __pycache__/
 Archive/
+test.py

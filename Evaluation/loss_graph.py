@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
 import os.path as osp
 from scipy.signal import medfilt
 
@@ -14,7 +15,7 @@ COMPONENTS = {
 
 repo = osp.dirname(osp.dirname(__file__))
 ARCHIVE = osp.join(repo, "Archive")
-runs = ["e1200", "e1200-1800"]
+runs = ["e1400"]
 
 plt.figure(figsize=(8, 5))
 for name in runs:
@@ -32,8 +33,15 @@ for name in runs:
     plt.plot(test[:, 0], test[:, 1], "--", label=f"{name} test")
 
 plt.yscale("log")
+
+ax = plt.gca()
+fmt = mticker.FuncFormatter(lambda y, _: f"{y:g}")
+ax.yaxis.set_major_formatter(fmt)
+ax.yaxis.set_minor_locator(mticker.LogLocator(base=10, subs=(2,4,6,8)))
+ax.yaxis.set_minor_formatter(fmt)
+ax.tick_params(axis="y", which="both", labelsize=8)
+
 plt.xlabel("Epoch")
-plt.ylabel("Total loss")
+plt.ylabel("Loss")
 plt.legend()
-plt.savefig(osp.join(ARCHIVE, "loss_curves.png"), dpi=150)
 plt.show()

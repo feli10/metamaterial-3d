@@ -26,7 +26,7 @@ model.eval()
 
 d = np.load(osp.join(repo, "dataset.npz"))
 
-for i in range(30, 40):
+for i in range(130, 140):
     x = torch.tensor(d["cells"][i:i+1]).float()        # [1,10,10,10]
     x_np = x.numpy()
 
