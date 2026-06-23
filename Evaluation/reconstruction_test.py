@@ -10,14 +10,12 @@ sys.path.insert(0, osp.join(repo, "Data_Generation"))
 
 from view_cell import view_cell
 
-
 def draw_cell(ax, A, threshold=0.0, title=None):
     filled = np.transpose(A > threshold, (2, 1, 0))
     ax.voxels(filled, edgecolor='k', linewidth=0.2)
     ax.set_box_aspect((1, 1, 1))
     if title:
         ax.set_title(title)
-
 
 device = torch.device("cpu")
 
@@ -26,15 +24,15 @@ model.eval()
 
 d = np.load(osp.join(repo, "dataset.npz"))
 
-for i in range(1000, 1020):
-    x = torch.tensor(d["cells"][i:i+1]).float()        # [1,10,10,10]
+for i in range(1200, 1210):
+    x = torch.tensor(d["cells"][i:i+1]).float()
     x_np = x.numpy()
 
     with torch.no_grad():
         x_hat, mean, sph_err_e, mean_dec, sph_err_d = model(x)
 
     recon = x_hat.view(1, 10, 10, 10).cpu().numpy()
-    recon_bin = (recon > 0.5).astype(float)          # x_hat is in (0,1) → threshold
+    recon_bin = (recon > 0.5).astype(float)
 
     print("input vf: ", x.mean().item())
     print("recon vf: ", recon_bin.mean())
