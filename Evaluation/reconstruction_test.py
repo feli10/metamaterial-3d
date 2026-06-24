@@ -24,11 +24,13 @@ model.eval()
 
 d = np.load(osp.join(repo, "dataset.npz"))
 
-for i in range(1200, 1210):
+for i in range(10, 20):
     x = torch.tensor(d["cells"][i:i+1]).float()
     x_np = x.numpy()
 
     with torch.no_grad():
+        mean, _ = model.Encoder(x)
+        print([round(float(mean[0][i][0][0][0]), 4) for i in range(22)])
         x_hat, mean, sph_err_e, mean_dec, sph_err_d = model(x)
 
     recon = x_hat.view(1, 10, 10, 10).cpu().numpy()

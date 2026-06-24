@@ -122,8 +122,8 @@ print("min_dist:", min_dist.shape)
  
 plt.figure()
 plt.scatter(min_dist, confidence_score, alpha=0.5)
-plt.xlabel('Min distance to training data in latent space')
-plt.ylabel('Confidence score  exp(-(sph_err - baseline))')
+plt.xlabel('Distance to Training Data')
+plt.ylabel('Confidence score')
 plt.grid(True)
 plt.savefig(osp.join(figure_dir, "Freq_FNO_confidence_vs_min_dist.png"))
 np.savetxt(osp.join(plot_data_dir, "Freq_FNO_confidence_vs_min_dist.txt"),
