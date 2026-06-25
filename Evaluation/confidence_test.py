@@ -20,10 +20,10 @@ batch_size = 16
 SPH_ERR_BASELINE = 0.04 
 N_AUG = 3
  
-model_file = osp.join(repo, "Archive", "e1200_guard", "Freq_FNO.pth")
-plot_data_dir = osp.join(repo, "Evaluation", "plot_data")
+model_file = osp.join(repo, "Archive", "e1200", "Freq_FNO.pth")
+latent_data_dir = osp.join(repo, "Evaluation", "latent_data")
 figure_dir = osp.join(repo, "Evaluation", "figures")
-train_latent_cache = osp.join(plot_data_dir, "Freq_FNO_training_latent_data.txt")
+train_latent_cache = osp.join(latent_data_dir, "Freq_FNO_training_latent_data.txt")
 
 # == DATA ==========
  
@@ -126,6 +126,6 @@ plt.xlabel('Distance to Training Data')
 plt.ylabel('Confidence score')
 plt.grid(True)
 plt.savefig(osp.join(figure_dir, "Freq_FNO_confidence_vs_min_dist.png"))
-np.savetxt(osp.join(plot_data_dir, "Freq_FNO_confidence_vs_min_dist.txt"),
+np.savetxt(osp.join(latent_data_dir, "Freq_FNO_confidence_vs_min_dist.txt"),
            np.column_stack((min_dist, confidence_score)), delimiter=',', fmt='%.6f')
 plt.show()

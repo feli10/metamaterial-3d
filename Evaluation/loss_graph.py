@@ -8,14 +8,14 @@ COMPONENTS = {
     1: "total",
     2: "reconstruction",
     3: "property prediction",
-    4: "encoder epistemic",
+    4: "encoder variance",
     5: "decoder epistemic",
-    6: "mid-value reconstruction",
+    6: "latent recovery",
 }
 
 repo = osp.dirname(osp.dirname(__file__))
 ARCHIVE = osp.join(repo, "Archive")
-runs = ["e1200_guard"]
+runs = ["e1200"]
 
 plt.figure(figsize=(8, 5))
 for name in runs:
@@ -26,11 +26,11 @@ for name in runs:
     train[:, 1] = medfilt(train[:, 1], 3)   # smooth out numerical spikes
     test[:, 1]  = medfilt(test[:, 1], 3)
 
-    # for col in [2, 3, 4, 5, 6]:
-    #     plt.plot(train[:, 0], train[:, col], label=COMPONENTS[col], alpha=0.8)
+    for col in [2, 3, 4, 5, 6]:
+        plt.plot(train[:, 0], train[:, col], label=COMPONENTS[col], alpha=0.8)
 
-    line, = plt.plot(train[:, 0], train[:, 1], label=f"{name} train", alpha=0.6)
-    plt.plot(test[:, 0], test[:, 1], "--", label=f"{name} test")
+    # line, = plt.plot(train[:, 0], train[:, 1], label=f"{name} train", alpha=0.6)
+    # plt.plot(test[:, 0], test[:, 1], "--", label=f"{name} test")
 
 plt.yscale("log")
 
