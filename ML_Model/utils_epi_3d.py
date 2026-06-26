@@ -9,7 +9,9 @@ def loss_function(x, x_hat,y_true, mean, sph_err_encoder, mean_decoder,sph_err_d
     # print("var_loss: {}".format(var_loss))
     # print("max x_hat: {}, min x_hat: {}".format(torch.max(x_hat), torch.min(x_hat)))
     reproduction_loss = nn.functional.binary_cross_entropy(x_hat,x, reduction='mean')
-    prediction_loss = nn.functional.mse_loss(mean[:,:num_properties].squeeze(), y_true, reduction='mean')
+    # prediction_loss = nn.functional.mse_loss(mean[:,:num_properties].squeeze(), y_true, reduction='mean')
+    pred = mean[:, :num_properties].squeeze()
+    prediction_loss = torch.mean((pred - y_true)**2 / (y_true**2 + 1e-3))
     reproduction_mid_value_loss = nn.functional.mse_loss(mean_decoder.squeeze(), mean.squeeze(), reduction='mean')
     total_loss = reproduction_loss + var_loss  + prediction_loss + reproduction_mid_value_loss
     return total_loss, reproduction_loss,prediction_loss, torch.mean(sph_err_encoder),torch.mean(sph_err_decoder), reproduction_mid_value_loss
