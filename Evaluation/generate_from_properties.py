@@ -1,8 +1,3 @@
-"""
-generate_from_properties.py -- pin a target property vector, search the 10 free
-latent dims for the lowest epistemic error (highest confidence), then show it.
-Confidence matches Evaluation/confidence_test.py exactly. Runs locally.
-"""
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
@@ -12,13 +7,13 @@ import sys
 repo = osp.dirname(osp.dirname(__file__))
 sys.path.insert(0, osp.join(repo, "ML_Model"))
 
-MODEL_PATH = osp.join(repo, "Archive", "e1200", "Freq_FNO.pth")
+MODEL_PATH = osp.join(repo, "Archive", "e1200_200", "Freq_FNO.pth")
 DATASET_PATH = osp.join(repo, "dataset.npz")
 LATENT_PATH = osp.join(repo, "Evaluation", "latent_data", "Freq_FNO_training_latent_data.txt")
 SPH_ERR_BASELINE = 0.04 
 THRESHOLD = 0.9995
 LR = 5e-2
-ITERS = 100
+ITERS = 1
 
 model = torch.load(MODEL_PATH, map_location="cpu", weights_only=False)
 model.device = torch.device("cpu")
@@ -35,14 +30,14 @@ def evaluate(mid_value):
     return eps_e, fa, x_hat
 
 d = np.load(DATASET_PATH)
-cell_idx = 2
+cell_idx = 10
 
-# with torch.no_grad():
-#     mean, _ = model.Encoder(torch.tensor(d["cells"][2:3]).float())
-# test = [round(float(mean[0][k][0][0][0]),4) for k in range(22)]
-# print("encoder ch[:22]:", test)
+with torch.no_grad():
+    mean, _ = model.Encoder(torch.tensor(d["cells"][2:3]).float())
+test = [round(float(mean[0][k][0][0][0]),4) for k in range(22)]
+print("encoder ch[:22]:", test)
 
-# z_fixed = torch.tensor(test)
+z_fixed = torch.tensor(test)
 
 z_fixed = torch.tensor(np.concatenate([[d["vfs"][cell_idx]], 
     d["C"][cell_idx][np.triu_indices(6)]]), dtype=torch.float32)
@@ -72,7 +67,7 @@ for _ in range(ITERS):
         break
 
 print(f"fa = {fa.item():.5f}  (eps_e = {eps_e.item():.4f})")
-geometry = x_hat.squeeze().detach().numpy()
+geometry = np.transpose(x_hat.squeeze().detach().numpy(), (2, 1, 0))
 
 ax = plt.figure().add_subplot(projection="3d")
 ax.set_box_aspect((1, 1, 1))
