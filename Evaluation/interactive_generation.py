@@ -7,6 +7,9 @@ import sys
 
 repo = osp.dirname(osp.dirname(__file__))
 sys.path.insert(0, osp.join(repo, "ML_Model"))
+sys.path.insert(0, osp.join(repo, "Property_Testing"))
+
+from homopy_fem_3d import homogenize_3d, IsotropicMaterial
 
 MODEL_PATH = osp.join(repo, "Archive", "e1200_100", "Freq_FNO.pth")
 DATASET_PATH = osp.join(repo, "dataset.npz")
@@ -16,9 +19,11 @@ SPH_ERR_BASELINE = 0.04
 THRESHOLD = 0.9995
 LR = 5e-2
 ITERS = 100
-cell_idx = 100 # reference cell; seeds slider start positions
+cell_idx = 100
 
-# Exposed property channels: vf + the six diagonal stiffnesses 
+BASE_MAT = IsotropicMaterial(E=1.0, nu=0.3)
+
+# Exposed property channels: vf + the six diagonal stiffnesses
 EXPOSED = [0, 1, 7, 12, 16, 19, 21]
 
 prop_desc = {
@@ -46,6 +51,7 @@ def evaluate(mid_value):
     fa = torch.exp(-(eps_e - SPH_ERR_BASELINE))
     return eps_e, fa, x_hat
 
+
 d = np.load(DATASET_PATH)
 triu = np.triu_indices(6)
 prop_labels = ["vf"] + [f"C{i+1}{j+1}" for i, j in zip(*triu)]
@@ -64,8 +70,6 @@ def generate(target, progress=None):
     target = target.copy()
 
     # Fill non-exposed property channels from the training cell closest on the exposed channels
-    # only (raw scale). This keeps the filled-in values mutually consistent and tracking the
-    # sliders, instead of frozen at the reference cell.
     d_props = np.sum((all_props[:, exposed] - target[exposed])**2
                      / (target[exposed] + 1e-3)**2, axis=1)
     target[non_exposed] = all_props[np.argmin(d_props), non_exposed]
@@ -90,16 +94,17 @@ def generate(target, progress=None):
         if fa.item() >= THRESHOLD:
             break
 
-    geometry = np.transpose(x_hat.squeeze().detach().numpy(), (2, 1, 0))
-    return geometry, fa.item(), eps_e.item()
-
+    cell = (x_hat.squeeze().detach().numpy() > 0.5).astype(np.float64)
+    return cell, fa.item(), eps_e.item()
 
 # --- widget UI ---
 fig = plt.figure(figsize=(10, 6))
 ax3d = fig.add_subplot(111, projection="3d")
 fig.subplots_adjust(bottom=0.42)
 warn_txt = fig.text(0.05, 0.97, "", color="crimson", fontsize=9, va="top")
-status_txt = fig.text(0.7, 0.88, "", color="gray", fontsize=10)
+status_txt = fig.text(0.7, 0.85, "", color="gray", fontsize=10)
+
+last_cell = [None]
 
 # One slider per exposed channel. Limits are padded beyond the training range so the user can
 # drag out-of-distribution to trigger the warning. Guard against a degenerate range (a channel
@@ -143,8 +148,10 @@ def on_generate(event):
     fig.canvas.draw()
     fig.canvas.flush_events()
 
-    geometry, fa, eps_e = generate(target, progress)
+    cell, fa, eps_e = generate(target, progress)
+    last_cell[0] = cell
     status_txt.set_text("")
+    geometry = np.transpose(cell, (2, 1, 0))   # plotting convention only
     ax3d.clear()
     ax3d.set_box_aspect((1, 1, 1))
     ax3d.voxels(geometry > 0.5, facecolors="#1D9E75", edgecolor="k", linewidth=0.2)
@@ -152,8 +159,28 @@ def on_generate(event):
     fig.canvas.draw_idle()
 
 
-btn = Button(fig.add_axes([0.7, 0.92, 0.2, 0.05]), "Generate")
-btn.on_clicked(on_generate)
+def on_evaluate(event):
+    cell = last_cell[0]
+    if cell is None:
+        return
+    status_txt.set_text("Homogenizing…")
+    fig.canvas.draw()
+    fig.canvas.flush_events()
+    # Homogenize the generated geometry to get its *physical* properties (ground truth), which
+    # may not exactly equal the target you dialed in. Same call as the dataset's run_homog.py.
+    C = homogenize_3d(10, 10, 10, BASE_MAT, density_field=cell)
+    achieved = np.concatenate([[cell.mean()], C[triu[0], triu[1]]]).astype(np.float32)
+    status_txt.set_text("")
+    print(f"{'chan':>5} {'target':>9} {'achieved':>9} {'err':>8}")
+    for ch, s in sliders.items():
+        print(f"{prop_labels[ch]:>5} {s.val:9.4f} {achieved[ch]:9.4f} {achieved[ch]-s.val:8.4f}")
+
+
+btn_gen = Button(fig.add_axes([0.7, 0.9, 0.2, 0.05]), "Generate")
+btn_gen.on_clicked(on_generate)
+
+btn_eval = Button(fig.add_axes([0.7, 0.75, 0.2, 0.05]), "Evaluate")
+btn_eval.on_clicked(on_evaluate)
 
 on_generate(None)   # initial render; remove to start blank
 plt.show()
