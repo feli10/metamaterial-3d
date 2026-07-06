@@ -1,0 +1,207 @@
+/**
+ * App.css — layout for the two-column shell + shared chrome (buttons, panels, chips).
+ *
+ * Left column  = the action/output "spine" (model -> generate/evaluate -> preview ->
+ *                confidence -> save/load) as free-standing elements.
+ * Right column = ONE solid block: inputs (light, top) joined flush to the results readout
+ *                (dark, bottom) — not two floating panels.
+ */
+
+.app {
+  display: grid;
+  /* left = flexible (grows so the preview gets width); right = fixed panel docked to the edge */
+  grid-template-columns: minmax(360px, 1fr) 700px;
+  min-height: 100vh;
+}
+
+/* --- columns --- */
+/* the left spine is capped and centered in its (wide) column, so the preview sits centered */
+.col-left {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 32px 28px;
+  width: 100%;
+  max-width: 620px;
+  margin: 0 auto;
+  align-self: start;
+  position: sticky;
+  top: 0;
+}
+
+.col-right {
+  display: flex;
+}
+
+/* --- the right-side solid block: docked flush to the top/right/bottom screen edges --- */
+.workpanel {
+  flex: 1;
+  min-height: 100vh;
+  border-left: 1px solid var(--border);
+  background: var(--panel);
+  display: flex;
+  flex-direction: column;
+}
+
+.workpanel-section {
+  padding: 32px;
+}
+
+.workpanel-results {
+  flex: 1; /* fills the remaining height down to the bottom edge */
+  padding: 32px;
+  background: var(--panel-dark);
+  color: #ffffff;
+}
+
+/* section headings: colored title (crimson) instead of an accent bar */
+.workpanel-section h2 {
+  font-size: 18px;
+  color: var(--accent);
+  margin-bottom: 16px;
+}
+
+.workpanel-section h2:not(:first-child) {
+  margin-top: 28px;
+}
+
+.workpanel-results h2 {
+  font-size: 18px;
+  color: #ffffff;
+  margin-bottom: 16px;
+}
+
+/* --- buttons: both main actions share one solid style, differing only in color weight --- */
+.btn {
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 9px 18px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  color: #ffffff;
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease,
+    color 0.12s ease;
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* primary = Generate (crimson) */
+.btn-primary {
+  background: var(--accent);
+}
+
+.btn-primary:not(:disabled):hover {
+  background: var(--accent-strong);
+}
+
+/* secondary = Evaluate (slate) — same shape/weight as primary, quieter color */
+.btn-secondary {
+  background: #2b3542;
+}
+
+.btn-secondary:not(:disabled):hover {
+  background: #1e2732;
+}
+
+/* ghost = tertiary (Save/Load): quiet outline */
+.btn-ghost {
+  background: transparent;
+  color: var(--muted);
+  border-color: var(--border);
+}
+
+.btn-ghost:not(:disabled):hover {
+  color: var(--text);
+  border-color: var(--input-border);
+}
+
+/* --- left-column bits --- */
+.model-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.model-chip .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--material);
+}
+
+.model-chip strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.button-row {
+  display: flex;
+  gap: 10px;
+}
+
+.status-line {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--accent-strong);
+  min-height: 20px; /* reserve space so layout doesn't jump when a message appears */
+}
+
+/* 3D preview box — grows with the wider left column, up to a sensible cap */
+.preview-box {
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  max-width: 560px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #eef1f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* confidence readout */
+.confidence-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.confidence-line .value {
+  font-family: var(--mono);
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.confidence-line .value--good {
+  color: var(--material);
+}
+
+/* placeholder text (light and dark contexts) */
+.placeholder {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.workpanel-results .placeholder {
+  color: var(--muted-on-dark);
+}

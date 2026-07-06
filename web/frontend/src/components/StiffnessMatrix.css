@@ -1,0 +1,57 @@
+/**
+ * StiffnessMatrix.css — minimal, functional styling for the 6x6 grid.
+ * (Visual polish comes later — for now just get it laid out and readable.)
+ */
+
+.matrix {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 10px 14px;
+}
+
+.mx-cell {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.mx-label {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.mx-input {
+  width: 56px;
+  padding: 4px 7px;
+  border: 1px solid var(--input-border);
+  border-radius: 6px;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text);
+  background: var(--panel);
+  transition:
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.mx-input::placeholder {
+  color: #aab2bd;
+}
+
+.mx-input:hover {
+  border-color: #b4bcc8;
+}
+
+.mx-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--focus-ring);
+}
+
+/* the lower-triangle "= Cᵢⱼ" relationship — muted, clearly not an input */
+.mx-relation {
+  color: var(--muted);
+  font-size: 12px;
+}

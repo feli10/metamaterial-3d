@@ -1,0 +1,12 @@
+/** VoxelPreview.css — the canvas variant of the preview box fills the square. */
+
+.preview-box--canvas {
+  display: block;
+  padding: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+.preview-box--canvas canvas {
+  display: block;
+}

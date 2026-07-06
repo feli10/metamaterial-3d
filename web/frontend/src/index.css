@@ -1,0 +1,61 @@
+/**
+ * index.css — global styles: palette (CSS variables) + base typography + reset.
+ *
+ * Direction: clean scientific slate, restrained and intentional (no gradients). Single accent
+ * = SimHub crimson (--accent; swap the hex once we have the exact brand value). Semantic colors
+ * (green material, green→yellow→red error) stay untouched. Light UI, single dark results region.
+ * Type: IBM Plex Sans (UI) + IBM Plex Mono (numbers).
+ */
+
+:root {
+  /* Neutrals — cool slate */
+  --app-bg: #f3f5f8;
+  --panel: #ffffff;
+  --panel-dark: #1e2732; /* results readout region */
+  --border: #e0e4ea;
+  --input-border: #cad2dc;
+  --text: #1b2430;
+  --muted: #6b7482;
+  --muted-on-dark: #97a3b4;
+
+  /* Accent — SimHub maroon (Texas A&M maroon family; estimated from the site nav bar) */
+  --accent: #631018;
+  --accent-strong: #490a11;
+  --accent-soft: #f3e8e9; /* light maroon tint for hovers on light bg */
+
+  /* Semantic */
+  --material: #1d9e75;
+  --caution: #f59e0b;
+  --error: #dc2626;
+
+  --sans: "IBM Plex Sans", system-ui, "Segoe UI", Roboto, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --focus-ring: 0 0 0 3px rgba(99, 16, 24, 0.22);
+
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--app-bg);
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+  letter-spacing: -0.01em;
+}

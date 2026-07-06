@@ -1,0 +1,49 @@
+/** VolumeFraction.css — box + slider row. (Visual polish comes later.) */
+
+.vf-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.vf-label {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text);
+}
+
+.vf-input {
+  width: 66px;
+  padding: 4px 7px;
+  border: 1px solid var(--input-border);
+  border-radius: 6px;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text);
+  background: var(--panel);
+  transition:
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.vf-input::placeholder {
+  color: #aab2bd;
+}
+
+.vf-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--focus-ring);
+}
+
+.vf-slider {
+  flex: 1;
+  height: 5px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+/* muted while vf is auto, so the slider position doesn't imply a chosen value */
+.vf-slider--auto {
+  opacity: 0.45;
+}
