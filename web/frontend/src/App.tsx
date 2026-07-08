@@ -179,7 +179,7 @@ function App() {
           <span>
             Confidence (f<sub>a</sub>)
           </span>
-          <span className={`value${generated && generated.fa >= 0.99 ? " value--good" : ""}`}>
+          <span className="value">
             {generated ? generated.fa.toFixed(3) : "—"}
           </span>
         </div>

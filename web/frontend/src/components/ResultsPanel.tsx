@@ -139,7 +139,10 @@ export default function ResultsPanel({ achieved, target, autoMask }: Props) {
             auto={autoMask?.[0] ?? false}
           />
         </span>
-        <span className="res-mae">mean absolute error = {mae.toFixed(4)}</span>
+        <span className="res-mae">
+          mean absolute error ={" "}
+          <span style={{ color: errorColor(mae) }}>{mae.toFixed(4)}</span>
+        </span>
       </div>
     </div>
   );

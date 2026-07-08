@@ -192,10 +192,6 @@
   color: var(--text);
 }
 
-.confidence-line .value--good {
-  color: var(--material);
-}
-
 /* placeholder text (light and dark contexts) */
 .placeholder {
   color: var(--muted);

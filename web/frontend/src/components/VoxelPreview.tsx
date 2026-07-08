@@ -26,7 +26,7 @@ const CUBE_SIZE = 1.0; // full size: adjacent voxels touch so struts stay connec
 const EDGE_SIZE = CUBE_SIZE * 1.015; // edges drawn from a slightly LARGER box so the lines sit
 // just outside the green faces — avoids z-fighting (the flicker) with coincident surfaces.
 const EDGE_WIDTH = 1; // edge thickness in pixels — adjust to taste (fat lines, so it works)
-const EDGE_COLOR = "#0d3b2b"; // near-black green
+const EDGE_COLOR = "#0d193a"; // near-black green
 
 /** The instanced cubes + merged edge outlines for all solid voxels. */
 function Voxels({ voxels }: { voxels: number[] }) {
@@ -87,7 +87,7 @@ function Voxels({ voxels }: { voxels: number[] }) {
         args={[undefined, undefined, Math.max(1, positions.length)]}
       >
         <boxGeometry args={[CUBE_SIZE, CUBE_SIZE, CUBE_SIZE]} />
-        <meshStandardMaterial color="#1d9e75" flatShading roughness={0.6} />
+        <meshStandardMaterial color="#5d94d7" flatShading roughness={0.6} />
       </instancedMesh>
       {edgePoints.length > 0 && (
         <Line points={edgePoints} segments color={EDGE_COLOR} lineWidth={EDGE_WIDTH} />
