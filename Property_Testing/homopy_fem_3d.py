@@ -17,6 +17,7 @@ Reference: Extraweich/homopy (https://github.com/Extraweich/homopy)
 """
 
 import numpy as np
+import scipy.linalg
 from typing import Tuple, Optional
 from abc import ABC, abstractmethod
 
@@ -787,34 +788,47 @@ class FEM3DHomogenizer:
         # Assemble global stiffness matrix
         K = self._assemble_stiffness(edof_mat, rho_scaled)
 
-        # Process 6 unit strain load cases
-        C_eff = np.zeros((6, 6), dtype=self.dtype)
-        U_all = []  # Store displacement fields for all load cases
+        # The reduced-system matrix Kr depends only on K, NOT on the load case,
+        # so build and factorize it ONCE and reuse the factorization for all 6
+        # right-hand sides. This replaces 6 dense SVD solves (np.linalg.lstsq)
+        # with a single Cholesky factorization plus 6 cheap back-substitutions.
+        Kr, scale_factors = self._build_reduced_matrix(K)
+        factor = self._factorize_reduced(Kr, scale_factors)
 
+        # Build every load case's prescribed BCs and reduced RHS up front
+        prescribed = []
+        rhs_cols = []
         for load_case in range(6):
-            # Get strain tensor and prescribed displacements
-            strain_tensor = self._strain_from_load_case(load_case)
             ufixed, wfixed = self._compute_prescribed_displacements(load_case)
+            prescribed.append((ufixed, wfixed))
+            rhs_cols.append(self._build_reduced_rhs(K, ufixed, wfixed))
 
-            # Solve reduced system for this load case (now passes strain tensor for global application)
-            U = self._solve_reduced_system(K, ufixed, wfixed, strain_tensor)
+        # Solve all 6 load cases simultaneously (single triangular solve on a
+        # stacked RHS matrix instead of one factorization per load case)
+        n_reduced = len(self.d2) + len(self.d3)
+        if factor is not None and n_reduced > 0:
+            RHS_mat = np.column_stack(rhs_cols)                 # (n_reduced, 6)
+            RHS_scaled = scale_factors[:, None] * RHS_mat
+            sol_scaled = self._solve_factored(factor, RHS_scaled)
+            sol_mat = sol_scaled * scale_factors[:, None]       # unscale
+        else:
+            sol_mat = np.zeros((n_reduced, 6), dtype=self.dtype)
+
+        # Reconstruct full displacement field for each load case
+        U_all = []
+        for load_case in range(6):
+            ufixed, wfixed = prescribed[load_case]
+            U = self._reconstruct_displacements(sol_mat[:, load_case], ufixed, wfixed)
             U_all.append(U)
 
         # Compute strain energy coupling matrix
-        for i in range(6):
-            for j in range(6):
-                U_i = U_all[i]
-                U_j = U_all[j]
-
-                # Energy: (1/V) * Σ_e ρ_e^p * u_i^T K_e u_j
-                energy = 0.0
-                for elem in range(self.n_elem):
-                    edofs = edof_mat[elem]
-                    u_e_i = U_i[edofs]
-                    u_e_j = U_j[edofs]
-                    energy += rho_scaled[elem] * (u_e_i @ self.KE @ u_e_j)
-
-                C_eff[i, j] = energy / self.n_elem
+        # C_eff[i,j] = (1/V) * Σ_e ρ_e^p * u_i,e^T KE u_j,e, vectorized over
+        # elements and load-case pairs via einsum instead of a 36 × n_elem loop.
+        U_arr = np.asarray(U_all)                               # (6, ndof)
+        Ue = U_arr[:, edof_mat]                                 # (6, n_elem, 24)
+        KEUe = np.einsum('nm,jem->jen', self.KE, Ue)            # KE u_j,e
+        C_eff = np.einsum('e,ien,jen->ij', rho_scaled, Ue, KEUe) / self.n_elem
+        C_eff = C_eff.astype(self.dtype, copy=False)
 
         if verbose:
             print(f"C_eff[0,0] = {C_eff[0,0]:.8f}")
@@ -942,30 +956,22 @@ class FEM3DHomogenizer:
 
         return strain_tensor
 
-    def _solve_reduced_system(self, K: np.ndarray, ufixed: np.ndarray,
-                             wfixed: np.ndarray, strain_tensor: np.ndarray = None) -> np.ndarray:
-        """Solve reduced system with periodic constraints for one load case
+    def _build_reduced_matrix(self, K: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        """Build the reduced (constraint-condensed) system matrix and its
+        diagonal scaling factors.
 
-        Parameters
-        ----------
-        K : ndarray of shape (ndof, ndof)
-            Global stiffness matrix
-        ufixed : ndarray of shape (len(d1),)
-            Prescribed displacements at corner nodes
-        wfixed : ndarray of shape (len(d3),)
-            Periodic offsets for boundary pairs
-        strain_tensor : ndarray of shape (3, 3), optional
-            The macroscopic strain tensor (for interior correction)
+        Kr depends only on K, so it is identical for every load case and is
+        built exactly once per ``compute_effective_tensor`` call.
 
         Returns
         -------
-        U : ndarray of shape (ndof,)
-            Displacements at all DOFs for this load case
+        Kr : ndarray of shape (n_reduced, n_reduced)
+            Reduced stiffness matrix (rows/cols: d2 interior then d3 boundary).
+        scale_factors : ndarray of shape (n_reduced,)
+            Symmetric diagonal preconditioner 1/sqrt(|diag(Kr)|).
         """
+        d2_arr, d3_arr, d4_arr = self.d2, self.d3, self.d4
 
-        d1_arr, d2_arr, d3_arr, d4_arr = self.d1, self.d2, self.d3, self.d4
-
-        # Build reduced system matrix Kr
         k1 = K[np.ix_(d2_arr, d2_arr)]
         k2 = K[np.ix_(d2_arr, d3_arr)] + K[np.ix_(d2_arr, d4_arr)]
         k3 = K[np.ix_(d3_arr, d2_arr)] + K[np.ix_(d4_arr, d2_arr)]
@@ -974,8 +980,55 @@ class FEM3DHomogenizer:
 
         Kr = np.block([[k1, k2], [k3, k4]])
 
-        # Build RHS from prescribed boundaries and periodic offsets
-        # RHS = -K_{unknown,prescribed} @ u_prescribed
+        if Kr.size > 0:
+            Kr_diag = np.abs(np.diag(Kr))
+            # Avoid division by zero - set very small diagonal entries to 1
+            Kr_diag = np.where(Kr_diag < 1e-15, 1.0, Kr_diag)
+            scale_factors = 1.0 / np.sqrt(Kr_diag)
+        else:
+            scale_factors = np.zeros(0, dtype=self.dtype)
+
+        return Kr, scale_factors
+
+    def _factorize_reduced(self, Kr: np.ndarray, scale_factors: np.ndarray):
+        """Factorize the (diagonally scaled) reduced matrix once for reuse.
+
+        Kr is symmetric and, with the 8 corner DOFs prescribed, positive
+        definite, so a Cholesky factorization applies. If it fails (singular or
+        indefinite due to a degenerate mesh) we fall back to the original dense
+        least-squares path, preserving the previous robustness.
+
+        Returns
+        -------
+        factor : tuple or None
+            ('cho', cho_factor_result) or ('lstsq', Kr_scaled); None if empty.
+        """
+        if Kr.size == 0:
+            return None
+
+        Kr_scaled = (scale_factors[:, None] * Kr) * scale_factors[None, :]
+        try:
+            cf = scipy.linalg.cho_factor(Kr_scaled, check_finite=False)
+            return ('cho', cf)
+        except (np.linalg.LinAlgError, ValueError):
+            return ('lstsq', Kr_scaled)
+
+    @staticmethod
+    def _solve_factored(factor, RHS_scaled: np.ndarray) -> np.ndarray:
+        """Solve the scaled reduced system for one or many RHS columns."""
+        kind, data = factor
+        if kind == 'cho':
+            return scipy.linalg.cho_solve(data, RHS_scaled, check_finite=False)
+        return np.linalg.lstsq(data, RHS_scaled, rcond=None)[0]
+
+    def _build_reduced_rhs(self, K: np.ndarray, ufixed: np.ndarray,
+                           wfixed: np.ndarray) -> np.ndarray:
+        """Build the reduced RHS vector for a single load case.
+
+        RHS = -K_{unknown, prescribed} @ u_prescribed, accounting for both the
+        prescribed corner DOFs (d1) and the periodic offsets (d4 = d3 + wfixed).
+        """
+        d1_arr, d2_arr, d3_arr, d4_arr = self.d1, self.d2, self.d3, self.d4
 
         # Contribution from d1 (prescribed corners)
         rhs_d2_corner = np.zeros(len(d2_arr), dtype=self.dtype)
@@ -984,14 +1037,11 @@ class FEM3DHomogenizer:
 
         if len(d1_arr) > 0:
             if len(d2_arr) > 0:
-                k_d2_d1 = K[np.ix_(d2_arr, d1_arr)]
-                rhs_d2_corner = -k_d2_d1 @ ufixed
+                rhs_d2_corner = -K[np.ix_(d2_arr, d1_arr)] @ ufixed
             if len(d3_arr) > 0:
-                k_d3_d1 = K[np.ix_(d3_arr, d1_arr)]
-                rhs_d3_corner = -k_d3_d1 @ ufixed
+                rhs_d3_corner = -K[np.ix_(d3_arr, d1_arr)] @ ufixed
             if len(d4_arr) > 0:
-                k_d4_d1 = K[np.ix_(d4_arr, d1_arr)]
-                rhs_d4_corner = -k_d4_d1 @ ufixed
+                rhs_d4_corner = -K[np.ix_(d4_arr, d1_arr)] @ ufixed
 
         # Contribution from periodic offsets (d4 constraint: u[d4] = u[d3] + wfixed)
         rhs_d2_periodic = np.zeros(len(d2_arr), dtype=self.dtype)
@@ -1000,54 +1050,27 @@ class FEM3DHomogenizer:
 
         if len(d4_arr) > 0:
             if len(d2_arr) > 0:
-                k_d2_d4 = K[np.ix_(d2_arr, d4_arr)]
-                rhs_d2_periodic = -k_d2_d4 @ wfixed
+                rhs_d2_periodic = -K[np.ix_(d2_arr, d4_arr)] @ wfixed
             if len(d3_arr) > 0:
-                k_d3_d4 = K[np.ix_(d3_arr, d4_arr)]
-                rhs_d3_periodic = -k_d3_d4 @ wfixed
+                rhs_d3_periodic = -K[np.ix_(d3_arr, d4_arr)] @ wfixed
             if len(d4_arr) > 0:
-                k_d4_d4 = K[np.ix_(d4_arr, d4_arr)]
-                rhs_d4_periodic = -k_d4_d4 @ wfixed
+                rhs_d4_periodic = -K[np.ix_(d4_arr, d4_arr)] @ wfixed
 
         rhs_d2 = rhs_d2_corner + rhs_d2_periodic
         rhs_d3 = rhs_d3_corner + rhs_d3_periodic
         rhs_d4 = rhs_d4_corner + rhs_d4_periodic
 
         # Concatenate RHS: [rhs_d2; rhs_d3+rhs_d4] (since d3 and d4 are linked)
-        if len(d2_arr) > 0 or len(d3_arr) > 0:
-            rhs_d2_part = rhs_d2 if len(d2_arr) > 0 else np.zeros(0, dtype=self.dtype)
-            rhs_d34_part = rhs_d3 + rhs_d4 if (len(d3_arr) > 0 or len(d4_arr) > 0) else np.zeros(0, dtype=self.dtype)
-            RHS = np.concatenate([rhs_d2_part, rhs_d34_part])
-        else:
-            RHS = np.zeros(0, dtype=self.dtype)
+        rhs_d2_part = rhs_d2 if len(d2_arr) > 0 else np.zeros(0, dtype=self.dtype)
+        rhs_d34_part = (rhs_d3 + rhs_d4 if (len(d3_arr) > 0 or len(d4_arr) > 0)
+                        else np.zeros(0, dtype=self.dtype))
+        return np.concatenate([rhs_d2_part, rhs_d34_part])
 
-        # PHASE 1 IMPROVEMENT: Solve with diagonal scaling for better conditioning
-        if Kr.size > 0:
-            # Compute diagonal scaling factors to improve system conditioning
-            Kr_diag = np.abs(np.diag(Kr))
-            # Avoid division by zero - set very small diagonal entries to 1
-            Kr_diag = np.where(Kr_diag < 1e-15, 1.0, Kr_diag)
-            scale_factors = 1.0 / np.sqrt(Kr_diag)
+    def _reconstruct_displacements(self, sol: np.ndarray, ufixed: np.ndarray,
+                                   wfixed: np.ndarray) -> np.ndarray:
+        """Scatter a reduced solution back into the full DOF vector."""
+        d1_arr, d2_arr, d3_arr, d4_arr = self.d1, self.d2, self.d3, self.d4
 
-            # Scale system: D @ K @ D @ (D @ u) = D @ RHS
-            Kr_scaled = (scale_factors[:, None] * Kr) * scale_factors[None, :]
-            RHS_scaled = scale_factors * RHS
-
-            # Solve scaled system
-            sol_scaled = np.linalg.lstsq(Kr_scaled, RHS_scaled, rcond=None)[0]
-
-            # Unscale solution
-            sol = sol_scaled * scale_factors
-
-            # Optional: Report condition number improvement (for diagnostics)
-            if False:  # Set to True to enable diagnostics
-                cond_before = np.linalg.cond(Kr)
-                cond_after = np.linalg.cond(Kr_scaled)
-                print(f"  Condition number: {cond_before:.2e} -> {cond_after:.2e}")
-        else:
-            sol = np.zeros(0, dtype=self.dtype)
-
-        # Reconstruct full displacement field
         U = np.zeros(self.ndof, dtype=self.dtype)
         U[d1_arr] = ufixed
 
@@ -1062,6 +1085,26 @@ class FEM3DHomogenizer:
                 U[d4_arr] = U[d3_arr] + wfixed
 
         return U
+
+    def _solve_reduced_system(self, K: np.ndarray, ufixed: np.ndarray,
+                             wfixed: np.ndarray, strain_tensor: np.ndarray = None) -> np.ndarray:
+        """Solve the reduced periodic system for a single load case.
+
+        Retained as a convenience wrapper around the factorize/solve helpers.
+        ``compute_effective_tensor`` bypasses this to factorize once and solve
+        all 6 load cases together; use this only for standalone single solves.
+        """
+        Kr, scale_factors = self._build_reduced_matrix(K)
+        factor = self._factorize_reduced(Kr, scale_factors)
+        RHS = self._build_reduced_rhs(K, ufixed, wfixed)
+
+        if factor is not None and RHS.size > 0:
+            sol_scaled = self._solve_factored(factor, scale_factors * RHS)
+            sol = sol_scaled * scale_factors
+        else:
+            sol = np.zeros(len(self.d2) + len(self.d3), dtype=self.dtype)
+
+        return self._reconstruct_displacements(sol, ufixed, wfixed)
 
 
 # ═════════════════════════════════════════════════════════════════════════════
