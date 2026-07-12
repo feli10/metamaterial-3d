@@ -19,7 +19,8 @@ def draw_cell(ax, A, threshold=0.0, title=None):
 
 device = torch.device("cpu")
 
-model = torch.load(osp.join(repo, "Archive", "e1200_20", "Freq_FNO.pth"), map_location=device)
+from old_checkpoint import load_old_checkpoint  # e1200_20 is an OLD-class 10^3 checkpoint
+model = load_old_checkpoint(osp.join(repo, "Archive", "e1200_20", "Freq_FNO.pth"), map_location=device)
 model.eval()
 
 d = np.load(osp.join(repo, "dataset.npz"))

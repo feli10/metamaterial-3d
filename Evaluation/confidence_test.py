@@ -44,7 +44,8 @@ test_loader = torch.utils.data.DataLoader(
 
 # == MODEL SETUP ==========
 
-model = torch.load(model_file, map_location=device, weights_only=False)
+from old_checkpoint import load_old_checkpoint  # e1200 is an OLD-class 10^3 checkpoint
+model = load_old_checkpoint(model_file, map_location=device)
 model.device = device
 model.to(device)
 model.eval()

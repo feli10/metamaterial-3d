@@ -24,9 +24,7 @@ class Model(nn.Module):
     def forward(self, x):
         mid_value, sph_err_encoder = self.Encoder(x)
         z = self.Encoder.reparameterization(mid_value,sph_err_encoder,self.modes1,self.modes2,self.modes3)
-        # pass the grid dims so the decoder reconstructs at im_x/y/z (not the default 10^3);
-        # required for the spherical-error grid to match the field size at 15^3.
-        x_hat, mid_value_decoder, sph_err_decoder = self.Decoder(z, self.im_x, self.im_y, self.im_z)
+        x_hat, mid_value_decoder, sph_err_decoder = self.Decoder(z)
         return x_hat, mid_value, sph_err_encoder, mid_value_decoder, sph_err_decoder
 
 class FNO_Encoder(nn.Module):
@@ -157,7 +155,7 @@ class FreqFNO_Decoder(nn.Module):
         self.q = MLP(self.hidden_dim, self.latent_dim*2+1, self.hidden_dim*2) # output channel is 1: u(x, y)
         self.complex_activation_function = ComplexReLU(0.2)
         self.LeakyReLU = nn.LeakyReLU(0.2)
-        self.x_grid, self.y_grid, self.dx, self.dy = self.get_spherical_grid(batchsize, latent_dim*2, im_x, im_y, device)
+        self.x_grid, self.y_grid, self.dx, self.dy = self.get_spherical_grid(batchsize, latent_dim*2, 25, 40, device)
 
     def forward(self, x, output_im_x = 10, output_im_y = 10, output_im_z = 10):
         x = self.complex_activation_function(self.p(x))
@@ -194,9 +192,10 @@ class FreqFNO_Decoder(nn.Module):
 
         x_epi = x[:,1:,:,:,:]
         ### rearragle 3D array to 2D array
-        x_epi = torch.mean(x_epi,dim=4)  
+        x_epi = x_epi.reshape(x_epi.shape[0], x_epi.shape[1], 25, 40)  
         x_epi = 2*torch.sigmoid(x_epi)-1
-        mid_value = torch.mean(x_epi,dim=[2,3],keepdim=True)
+        mid_value = x_epi[:,:,25//2,40//2]
+        mid_value = mid_value[:,:,None,None]
         sph_err = self._calculate_spherical_error(x_epi,mid_value,self.x_grid,self.y_grid,self.dx,self.dy)
         return x_hat,mid_value, sph_err
 
@@ -234,7 +233,7 @@ class FreqFNO_Decoder(nn.Module):
         radical_error = radical_error.masked_fill(small_value_mask, 0.0)
         # ## curvature error on spherical surface
         K = _principal_curvatures_heightfield(z_grid, dx, dy)
-        curvature_err = torch.mean((K[:,:,3:-3,3:-3] - K0)**2,dim=[2,3],keepdim=True)
+        curvature_err = torch.mean((K[:,:,5:-5,5:-5] - K0)**2,dim=[2,3],keepdim=True)
         curvature_err = curvature_err.masked_fill(small_value_mask, 0.0)
         #print("radical_error: {}, curvature_err: {}".format(torch.mean(radical_error), torch.mean(curvature_err)))
         sph_err = radical_error + curvature_err*1e-1

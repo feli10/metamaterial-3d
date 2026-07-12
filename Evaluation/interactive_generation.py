@@ -36,7 +36,10 @@ prop_desc = {
     21: "C66 · shear stiffness xy",
 }
 
-model = torch.load(MODEL_PATH, map_location="cpu", weights_only=False)
+# e1200_100 is a 10^3 model pickled against the OLD model class; load it against the preserved
+# old definition (see ML_Model/old_checkpoint.py).
+from old_checkpoint import load_old_checkpoint
+model = load_old_checkpoint(MODEL_PATH)
 model.device = torch.device("cpu")
 model.eval()
 for p in model.parameters():

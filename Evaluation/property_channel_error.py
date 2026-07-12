@@ -10,7 +10,8 @@ MODEL_PATH = osp.join(repo, "Archive", "e1200_100", "Freq_FNO.pth")
 DATASET_PATH = osp.join(repo, "dataset.npz")
 N_PROPS = 22
 
-model = torch.load(MODEL_PATH, map_location="cpu", weights_only=False)
+from old_checkpoint import load_old_checkpoint  # e1200_100 is an OLD-class 10^3 checkpoint
+model = load_old_checkpoint(MODEL_PATH)
 model.eval()
 
 d = np.load(DATASET_PATH)

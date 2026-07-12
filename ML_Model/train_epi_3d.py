@@ -16,7 +16,7 @@ import argparse
 print("torch threads:", torch.get_num_threads(), "| OMP:", os.environ.get("OMP_NUM_THREADS"))
 
 if __name__ == '__main__':
-    cuda = False
+    cuda = torch.cuda.is_available()  # use the GPU on a GPU node, CPU otherwise
     device = torch.device("cuda" if cuda else "cpu")
 
     repo = osp.dirname(osp.dirname(__file__))
@@ -32,9 +32,8 @@ if __name__ == '__main__':
     os.makedirs(osp.join(out_dir, "checkpoints"), exist_ok=True)
     model_file = osp.join(out_dir, "checkpoints", experiment_name + ".pth")
 
-    im_x = 10
-    im_y = 10
-    im_z = 10 
+    # grid size is read from the dataset cells (10 for dataset.npz, 15 for dataset_15.npz)
+    im_x = im_y = im_z = int(d["cells"].shape[1])
     x_dim  = im_x*im_y*im_z
     hidden_dim = 64
     latent_dim = 32
