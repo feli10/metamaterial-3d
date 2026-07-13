@@ -24,7 +24,7 @@ if __name__ == '__main__':
     d = np.load(dataset_path)
 
     model_type = 'Freq_FNO' #'Spherical_FNO'
-    experiment_name = model_type
+    experiment_name = model_type + "_15"  # distinct checkpoint for the 15^3 model (Freq_FNO_15.pth)
 
     out_dir = os.environ.get("OUTPUT_DIR", repo)
     results_dir = osp.join(out_dir, "results")
