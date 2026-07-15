@@ -15,19 +15,32 @@ from utils_epi_3d import CombinedDataset
 
 # == CONFIG ==========
 
+from eval_config import (
+    MODEL_PATH as model_file,
+    DATASET,
+    LATENT as train_latent_cache,
+    BASELINE as SPH_ERR_BASELINE,
+    OLD,
+)
+
 device = torch.device("cpu")
-batch_size = 16
-SPH_ERR_BASELINE = 0.04 
 N_AUG = 3
- 
-model_file = osp.join(repo, "Archive", "e1200", "Freq_FNO.pth")
+
 latent_data_dir = osp.join(repo, "Evaluation", "latent_data")
 figure_dir = osp.join(repo, "Evaluation", "figures")
-train_latent_cache = osp.join(latent_data_dir, "Freq_FNO_training_latent_data.txt")
+
+# Load the model up front: the loader batch size must equal the model's spherical-grid batch
+# dimension (the grid is precomputed for a fixed batch size at train time), so we read it here.
+from old_checkpoint import load_model
+model = load_model(model_file, old=OLD, map_location=device)
+model.to(device)
+model.eval()
+N = model.im_x                                    # grid size read from the model (10 or 15)
+batch_size = int(model.Decoder.x_grid.shape[0])   # match the grid's baked-in batch dim
 
 # == DATA ==========
  
-d = np.load(osp.join(repo, "dataset.npz"))
+d = np.load(DATASET)
 X = d["cells"].astype(np.float32)                        
 iu = np.triu_indices(6)
 C_flat = d["C"][:, iu[0], iu[1]]
@@ -43,12 +56,6 @@ test_loader = torch.utils.data.DataLoader(
     test_dataset, batch_size=batch_size, shuffle=False, drop_last=True)
 
 # == MODEL SETUP ==========
-
-from old_checkpoint import load_old_checkpoint  # e1200 is an OLD-class 10^3 checkpoint
-model = load_old_checkpoint(model_file, map_location=device)
-model.device = device
-model.to(device)
-model.eval()
 
 def to_latent(mean):
     """[B, latent, 1, 1, 1] -> [B, latent] numpy."""
@@ -105,7 +112,7 @@ for x, _ in tqdm(test_loader, desc="test latents"):
         with torch.no_grad():
             z = model.Encoder.reparameterization(
                 mean2, sph_err_e, model.modes1, model.modes2, model.modes3)
-            _, _, sph_err_d2 = model.Decoder(z)
+            _, _, sph_err_d2 = model.Decoder(z, N, N, N)
         test_latent_data.append(to_latent(mean2))
         test_sph_err.append(confidence(sph_err_d2.cpu().numpy()))
         min_noise += 0.1

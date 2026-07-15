@@ -17,15 +17,18 @@ def draw_cell(ax, A, threshold=0.0, title=None):
     if title:
         ax.set_title(title)
 
-device = torch.device("cpu")
+from eval_config import MODEL_PATH, DATASET, OLD
+from old_checkpoint import load_model
 
-from old_checkpoint import load_old_checkpoint  # e1200_20 is an OLD-class 10^3 checkpoint
-model = load_old_checkpoint(osp.join(repo, "Archive", "e1200_20", "Freq_FNO.pth"), map_location=device)
+device = torch.device("cpu")
+model = load_model(MODEL_PATH, old=OLD, map_location=device)
 model.eval()
 
-d = np.load(osp.join(repo, "dataset.npz"))
+N = model.im_x  # grid size read from the model (10 or 15)
 
-for i in range(100, 101):
+d = np.load(DATASET)
+
+for i in range(10000, 10010):
     x = torch.tensor(d["cells"][i:i+1]).float()
     x_np = x.numpy()
 
@@ -34,7 +37,7 @@ for i in range(100, 101):
         print([round(float(mean[0][i][0][0][0]), 4) for i in range(22)])
         x_hat, mean, sph_err_e, mean_dec, sph_err_d = model(x)
 
-    recon = x_hat.view(1, 10, 10, 10).cpu().numpy()
+    recon = x_hat.view(1, N, N, N).cpu().numpy()
     recon_bin = (recon > 0.5).astype(float)
 
     print("input vf: ", x.mean().item())

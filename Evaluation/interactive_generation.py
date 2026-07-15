@@ -11,11 +11,8 @@ sys.path.insert(0, osp.join(repo, "Property_Testing"))
 
 from homopy_fem_3d import homogenize_3d, IsotropicMaterial
 
-MODEL_PATH = osp.join(repo, "Archive", "e1200_100", "Freq_FNO.pth")
-DATASET_PATH = osp.join(repo, "dataset.npz")
-LATENT_PATH = osp.join(repo, "Evaluation", "latent_data", "Freq_FNO_training_latent_data.txt")
+from eval_config import MODEL_PATH, DATASET as DATASET_PATH, LATENT as LATENT_PATH, BASELINE as SPH_ERR_BASELINE, OLD
 
-SPH_ERR_BASELINE = 0.04
 THRESHOLD = 0.9995
 LR = 5e-2
 ITERS = 100
@@ -36,20 +33,21 @@ prop_desc = {
     21: "C66 · shear stiffness xy",
 }
 
-# e1200_100 is a 10^3 model pickled against the OLD model class; load it against the preserved
-# old definition (see ML_Model/old_checkpoint.py).
-from old_checkpoint import load_old_checkpoint
-model = load_old_checkpoint(MODEL_PATH)
-model.device = torch.device("cpu")
+# load old or new model per eval_config (OLD flag); load_model handles both.
+from old_checkpoint import load_model
+model = load_model(MODEL_PATH, old=OLD, map_location="cpu")
 model.eval()
 for p in model.parameters():
     p.requires_grad_(False)
+
+N = model.im_x  # grid size read from the model (10 or 15)
 
 
 def evaluate(mid_value):
     z = model.Encoder.reparameterization(mid_value, torch.zeros_like(mid_value),
         model.modes1, model.modes2, model.modes3)
-    x_hat, _, sph_err = model.Decoder(z)
+
+    x_hat, _, sph_err = model.Decoder(z, N, N, N)
     eps_e = sph_err.reshape(-1).mean()
     fa = torch.exp(-(eps_e - SPH_ERR_BASELINE))
     return eps_e, fa, x_hat
@@ -158,6 +156,7 @@ def on_generate(event):
     ax3d.clear()
     ax3d.set_box_aspect((1, 1, 1))
     ax3d.voxels(geometry > 0.5, facecolors="#1D9E75", edgecolor="k", linewidth=0.2)
+    ax3d.set_xlabel("x"); ax3d.set_ylabel("y"); ax3d.set_zlabel("z")
     ax3d.set_title(f"fa = {fa:.5f}   eps_e = {eps_e:.4f}")
     fig.canvas.draw_idle()
 
@@ -171,7 +170,7 @@ def on_evaluate(event):
     fig.canvas.flush_events()
     # Homogenize the generated geometry to get its *physical* properties (ground truth), which
     # may not exactly equal the target you dialed in. Same call as the dataset's run_homog.py.
-    C = homogenize_3d(10, 10, 10, BASE_MAT, density_field=cell)
+    C = homogenize_3d(N, N, N, BASE_MAT, density_field=cell)
     achieved = np.concatenate([[cell.mean()], C[triu[0], triu[1]]]).astype(np.float32)
     status_txt.set_text("")
     print(f"{'chan':>5} {'target':>9} {'achieved':>9} {'err':>8}")
