@@ -17,8 +17,7 @@
 import {
   CHANNEL_COUNT,
   CHANNEL_LABELS,
-  GRID_DIM,
-  VOXEL_COUNT,
+  gridDimForVoxelCount,
   type GenerateResponse,
   type PropertyVector,
   type TargetVector,
@@ -49,12 +48,15 @@ export function buildSavedDesign(p: {
   generated: GenerateResponse | null;
   achieved: PropertyVector | null;
 }): SavedDesign {
+  // Grid size comes from the generated geometry (N = ∛length). Save is only reachable once a
+  // design has been generated, so voxels are always present here; default to 0 defensively.
+  const n = p.generated ? gridDimForVoxelCount(p.generated.voxels.length) : 0;
   return {
     format: SAVE_FORMAT,
     version: SAVE_VERSION,
     savedAt: new Date().toISOString(),
     model: p.model,
-    grid: [GRID_DIM, GRID_DIM, GRID_DIM],
+    grid: [n, n, n],
     channelLabels: CHANNEL_LABELS,
     target: p.target,
     filledTarget: p.generated?.filledTarget ?? null,
@@ -91,11 +93,11 @@ export function parseSavedDesign(text: string): SavedDesign {
   if (!Array.isArray(data.target) || data.target.length !== CHANNEL_COUNT) {
     throw new Error(`target must have ${CHANNEL_COUNT} channels`);
   }
-  if (
-    data.voxels != null &&
-    (!Array.isArray(data.voxels) || data.voxels.length !== VOXEL_COUNT)
-  ) {
-    throw new Error(`voxels must have ${VOXEL_COUNT} values`);
+  if (data.voxels != null) {
+    const n = gridDimForVoxelCount(data.voxels.length);
+    if (!Array.isArray(data.voxels) || n ** 3 !== data.voxels.length) {
+      throw new Error("voxels length must be a perfect cube (N³)");
+    }
   }
   if (
     data.filledTarget != null &&

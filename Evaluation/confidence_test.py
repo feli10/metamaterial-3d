@@ -35,8 +35,8 @@ from old_checkpoint import load_model
 model = load_model(model_file, old=OLD, map_location=device)
 model.to(device)
 model.eval()
-N = model.im_x                                    # grid size read from the model (10 or 15)
-batch_size = int(model.Decoder.x_grid.shape[0])   # match the grid's baked-in batch dim
+N = model.im_x # grid size read from the model
+batch_size = int(model.Decoder.x_grid.shape[0])
 
 # == DATA ==========
  

@@ -40,7 +40,7 @@ model.eval()
 for p in model.parameters():
     p.requires_grad_(False)
 
-N = model.im_x  # grid size read from the model (10 or 15)
+N = model.im_x # grid size read from the model (10 or 15)
 
 
 def evaluate(mid_value):
@@ -56,7 +56,7 @@ def evaluate(mid_value):
 d = np.load(DATASET_PATH)
 triu = np.triu_indices(6)
 prop_labels = ["vf"] + [f"C{i+1}{j+1}" for i, j in zip(*triu)]
-all_props = np.column_stack([d["vfs"], d["C"][:, triu[0], triu[1]]]).astype(np.float32)  # (N, 22)
+all_props = np.column_stack([d["vfs"], d["C"][:, triu[0], triu[1]]]).astype(np.float32) # (N, 22)
 prop_min, prop_max = all_props.min(0), all_props.max(0)
 ref = all_props[cell_idx].copy()
 
@@ -75,7 +75,7 @@ def generate(target, progress=None):
                      / (target[exposed] + 1e-3)**2, axis=1)
     target[non_exposed] = all_props[np.argmin(d_props), non_exposed]
 
-    # Seed the 10 free latent dims from the nearest training latent (rough init only).
+    # Seed the 10 free latent dims from the nearest training latent.
     dist = np.sum((train_props - target)**2 / (target + 1e-3)**2, axis=1)
     nearest = np.argmin(dist)
 
@@ -98,7 +98,7 @@ def generate(target, progress=None):
     cell = (x_hat.squeeze().detach().numpy() > 0.5).astype(np.float64)
     return cell, fa.item(), eps_e.item()
 
-# --- widget UI ---
+# widget UI
 fig = plt.figure(figsize=(10, 6))
 ax3d = fig.add_subplot(111, projection="3d")
 fig.subplots_adjust(bottom=0.42)
@@ -107,9 +107,6 @@ status_txt = fig.text(0.7, 0.85, "", color="gray", fontsize=10)
 
 last_cell = [None]
 
-# One slider per exposed channel. Limits are padded beyond the training range so the user can
-# drag out-of-distribution to trigger the warning. Guard against a degenerate range (a channel
-# that's constant across the dataset, which would make valmin == valmax).
 sliders = {}
 for k, ch in enumerate(EXPOSED):
     sax = fig.add_axes([0.25, 0.05 + 0.045 * k, 0.6, 0.03])
@@ -117,8 +114,7 @@ for k, ch in enumerate(EXPOSED):
     pad = 0.5 * span if span > 0 else max(abs(ref[ch]), 0.01)
     sliders[ch] = Slider(sax, prop_desc.get(ch, prop_labels[ch]),
                          prop_min[ch] - pad, prop_max[ch] + pad, valinit=ref[ch])
-    sliders[ch].label.set_fontsize(8)   # descriptive labels are long; shrink to fit
-
+    sliders[ch].label.set_fontsize(8)
 
 def check_range(_=None):
     msgs = [f"{prop_labels[ch]}={s.val:.3g} outside training "
@@ -140,7 +136,7 @@ def on_generate(event):
     check_range()
 
     def progress(i, fa):
-        if i % 5 == 0:                       # throttle: repaint every 5 iters
+        if i % 5 == 0:
             status_txt.set_text(f"Generating… {i+1}/{ITERS}  fa={fa:.4f}")
             fig.canvas.draw()
             fig.canvas.flush_events()
@@ -152,7 +148,7 @@ def on_generate(event):
     cell, fa, eps_e = generate(target, progress)
     last_cell[0] = cell
     status_txt.set_text("")
-    geometry = np.transpose(cell, (2, 1, 0))   # plotting convention only
+    geometry = np.transpose(cell, (2, 1, 0))
     ax3d.clear()
     ax3d.set_box_aspect((1, 1, 1))
     ax3d.voxels(geometry > 0.5, facecolors="#1D9E75", edgecolor="k", linewidth=0.2)
@@ -168,8 +164,7 @@ def on_evaluate(event):
     status_txt.set_text("Homogenizing…")
     fig.canvas.draw()
     fig.canvas.flush_events()
-    # Homogenize the generated geometry to get its *physical* properties (ground truth), which
-    # may not exactly equal the target you dialed in. Same call as the dataset's run_homog.py.
+    # Homogenize the generated geometry to get its physical properties, which may not exactly equal the target you dialed in.
     C = homogenize_3d(N, N, N, BASE_MAT, density_field=cell)
     achieved = np.concatenate([[cell.mean()], C[triu[0], triu[1]]]).astype(np.float32)
     status_txt.set_text("")
@@ -177,12 +172,11 @@ def on_evaluate(event):
     for ch, s in sliders.items():
         print(f"{prop_labels[ch]:>5} {s.val:9.4f} {achieved[ch]:9.4f} {achieved[ch]-s.val:8.4f}")
 
-
 btn_gen = Button(fig.add_axes([0.7, 0.9, 0.2, 0.05]), "Generate")
 btn_gen.on_clicked(on_generate)
 
 btn_eval = Button(fig.add_axes([0.7, 0.75, 0.2, 0.05]), "Evaluate")
 btn_eval.on_clicked(on_evaluate)
 
-on_generate(None)   # initial render; remove to start blank
+on_generate(None)
 plt.show()

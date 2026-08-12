@@ -24,11 +24,11 @@ device = torch.device("cpu")
 model = load_model(MODEL_PATH, old=OLD, map_location=device)
 model.eval()
 
-N = model.im_x  # grid size read from the model (10 or 15)
+N = model.im_x
 
 d = np.load(DATASET)
 
-for i in range(10000, 10010):
+for i in range(6000, 6010):
     x = torch.tensor(d["cells"][i:i+1]).float()
     x_np = x.numpy()
 

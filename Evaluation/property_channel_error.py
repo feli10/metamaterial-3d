@@ -10,7 +10,7 @@ MODEL_PATH = osp.join(repo, "Archive", "e1200_100", "Freq_FNO.pth")
 DATASET_PATH = osp.join(repo, "dataset.npz")
 N_PROPS = 22
 
-from old_checkpoint import load_old_checkpoint  # e1200_100 is an OLD-class 10^3 checkpoint
+from old_checkpoint import load_old_checkpoint
 model = load_old_checkpoint(MODEL_PATH)
 model.eval()
 
@@ -25,7 +25,7 @@ with torch.no_grad():
     for i in range(0, len(cells), 64):
         mean, _ = model.Encoder(cells[i:i+64])
         preds.append(mean[:, :N_PROPS, 0, 0, 0].numpy())
-pred = np.concatenate(preds, axis=0)  # [N,22]
+pred = np.concatenate(preds, axis=0) # [N,22]
 
 abs_err = np.abs(pred - y)
 rel_err = abs_err / (np.abs(y) + 1e-3)

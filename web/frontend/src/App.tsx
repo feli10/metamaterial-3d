@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import StiffnessMatrix from "./components/StiffnessMatrix";
 import VolumeFraction from "./components/VolumeFraction";
 import VoxelPreview from "./components/VoxelPreview";
@@ -7,6 +7,7 @@ import { api } from "./api/client";
 import {
   CHANNEL_COUNT,
   type GenerateResponse,
+  type ModelInfo,
   type PropertyValue,
   type PropertyVector,
   type TargetVector,
@@ -17,8 +18,6 @@ import {
   parseSavedDesign,
 } from "./lib/savedDesign";
 import "./App.css";
-
-const MODEL_ID = "s10v1";
 
 /**
  * App — the top-level layout + the generate/evaluate flow.
@@ -33,6 +32,20 @@ function App() {
   const [target, setTarget] = useState<TargetVector>(() =>
     new Array(CHANNEL_COUNT).fill(null),
   );
+
+  // Available models (from the backend) + the currently selected one. Fetched once on mount.
+  const [models, setModels] = useState<ModelInfo[]>([]);
+  const [modelId, setModelId] = useState<string>("");
+
+  useEffect(() => {
+    api
+      .listModels()
+      .then((list) => {
+        setModels(list);
+        if (list.length > 0) setModelId(list[0].id);
+      })
+      .catch((err) => setStatus(`Could not load models: ${(err as Error).message}`));
+  }, []);
 
   // Which operation is running (disables buttons, drives the status message). null = idle.
   const [busy, setBusy] = useState<"generating" | "evaluating" | null>(null);
@@ -61,14 +74,14 @@ function App() {
   const hasTarget = target.some((v) => v !== null);
 
   async function handleGenerate() {
-    if (busy || !hasTarget) return;
+    if (busy || !hasTarget || !modelId) return;
     setBusy("generating");
     setAchieved(null); // a new geometry invalidates any previous measurement
-    setStatus("Generating…");
+    setStatus("Generating… (this runs the model, ~10s)");
     const submitted = [...target]; // snapshot the target used for this run
     setSubmittedTarget(submitted);
     try {
-      const result = await api.generate({ target: submitted, model: MODEL_ID }, (p) =>
+      const result = await api.generate({ target: submitted, model: modelId }, (p) =>
         setStatus(`Generating… ${p.iter}/${p.total}  fₐ=${p.fa.toFixed(4)}`),
       );
       setGenerated(result);
@@ -83,7 +96,7 @@ function App() {
   async function handleEvaluate() {
     if (busy || !generated) return;
     setBusy("evaluating");
-    setStatus("Evaluating…");
+    setStatus("Evaluating… (FEM homogenization, ~8s)");
     try {
       const result = await api.evaluate({ voxels: generated.voxels }, (p) =>
         setStatus(`Evaluating… load case ${p.loadCase}/${p.total}`),
@@ -101,7 +114,7 @@ function App() {
   function handleSave() {
     if (!generated) return;
     const design = buildSavedDesign({
-      model: MODEL_ID,
+      model: modelId,
       target: submittedTarget ?? target,
       generated,
       achieved,
@@ -147,7 +160,23 @@ function App() {
       <div className="col-left">
         <div className="model-chip">
           <span className="dot" />
-          Model <strong>{MODEL_ID}</strong>
+          <label htmlFor="model-select">Model</label>
+          <select
+            id="model-select"
+            value={modelId}
+            onChange={(e) => setModelId(e.target.value)}
+            disabled={busy !== null || models.length === 0}
+          >
+            {models.length === 0 ? (
+              <option value="">loading…</option>
+            ) : (
+              models.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.label}
+                </option>
+              ))
+            )}
+          </select>
         </div>
 
         <div className="button-row">

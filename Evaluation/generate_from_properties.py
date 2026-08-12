@@ -15,7 +15,7 @@ THRESHOLD = 0.9995
 LR = 5e-2
 ITERS = 1
 
-from old_checkpoint import load_old_checkpoint  # e1200_200 is an OLD-class 10^3 checkpoint
+from old_checkpoint import load_old_checkpoint
 model = load_old_checkpoint(MODEL_PATH)
 model.device = torch.device("cpu")
 model.eval()

@@ -30,9 +30,15 @@
  */
 export const CHANNEL_COUNT = 22;
 
-/** The voxel grid is 10x10x10 = 1000 cells. */
-export const GRID_DIM = 10;
-export const VOXEL_COUNT = GRID_DIM * GRID_DIM * GRID_DIM; // 1000
+/**
+ * The voxel grid is N×N×N, where N depends on the MODEL (10³, 15³, and future resolutions).
+ * N is deliberately NOT a fixed constant — it travels with each model as `ModelInfo.gridDim`,
+ * and it can always be recovered from a voxel array's length, since length === N³. Use this
+ * helper wherever a flat voxel array must be decoded back into 3D coordinates.
+ */
+export function gridDimForVoxelCount(count: number): number {
+  return Math.round(Math.cbrt(count));
+}
 
 /**
  * Human-readable label for each of the 22 channels: ["vf", "C11", "C12", ..., "C66"].
@@ -100,8 +106,9 @@ export type PropertyVector = number[]; // length === CHANNEL_COUNT
 
 /** An entry in the model dropdown. `id` maps to a real checkpoint dir in the backend. */
 export interface ModelInfo {
-  id: string;    // e.g. "s10v1" (UI name) -> backend maps to Archive/e1200_100
-  label: string; // what the dropdown shows
+  id: string;      // dropdown id sent back on generate -> backend maps to a checkpoint dir
+  label: string;   // what the dropdown shows
+  gridDim: number; // grid resolution N for this model (e.g. 15 for a 15³ model)
 }
 
 /** POST /generate request body. */
@@ -113,10 +120,11 @@ export interface GenerateRequest {
 /** POST /generate response. */
 export interface GenerateResponse {
   /**
-   * The generated geometry: 1000 values, each 0 or 1, flattened from the 10x10x10
-   * grid with X FASTEST — flat index i decodes as
-   *   x = i % 10,  y = (i / 10) % 10,  z = i / 100
-   * Matching numpy's ordering here keeps the 3D preview from coming out mirrored.
+   * The generated geometry: N³ values, each 0 or 1, flattened from the N×N×N grid with
+   * X FASTEST — flat index i decodes as
+   *   x = i % N,  y = (i / N) % N,  z = i / N²
+   * where N = gridDimForVoxelCount(voxels.length). Matching numpy's ordering here keeps the
+   * 3D preview from coming out mirrored.
    */
   voxels: number[];
   /**

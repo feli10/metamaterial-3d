@@ -23,7 +23,7 @@ for name in runs:
                           delimiter="\t", comments="ep")
     test  = np.genfromtxt(osp.join(ARCHIVE, name, "Freq_FNO_test.log"),
                           delimiter="\t", comments="ep")
-    train[:, 1] = medfilt(train[:, 1], 3)   # smooth out numerical spikes
+    train[:, 1] = medfilt(train[:, 1], 3) # smooth out numerical spikes
     test[:, 1]  = medfilt(test[:, 1], 3)
 
     # for col in [2, 3, 4, 5, 6]:

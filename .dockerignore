@@ -1,0 +1,12 @@
+# Keep the Docker build context small. The Dockerfile COPYs only what it needs; everything below is either huge or irrelevant to the backend image.
+.git
+**/__pycache__
+**/*.pyc
+**/node_modules
+web/frontend
+web/backend/.venv
+
+# Ship only the checkpoints the model registry uses
+Archive/*
+!Archive/d15e200
+!Archive/e1200_100
